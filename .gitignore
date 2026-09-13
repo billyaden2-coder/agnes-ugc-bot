@@ -1,0 +1,7 @@
+node_modules/
+profile/
+profile-test/
+session.json
+media/
+config.json
+*.log

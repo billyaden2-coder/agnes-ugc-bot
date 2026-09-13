@@ -1,0 +1,17 @@
+{
+  "name": "agnes-social-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Telegram bot: product image -> Agnes UGC video ad -> sent back with caption",
+  "scripts": {
+    "auth": "node agnes-auth.mjs",
+    "token": "node agnes-auth.mjs",
+    "listen": "node listener.mjs",
+    "bot": "node bot.mjs",
+    "worker": "node bot-worker.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

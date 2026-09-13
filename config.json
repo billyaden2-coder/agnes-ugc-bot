@@ -1,0 +1,21 @@
+{
+  "telegram": {
+    "botToken": "8842551823:AAGqpT32uVCUx92bvW2OO3j94-5uzVa_ksg"
+  },
+  "agnes": {
+    "apiBase": "https://api.agnes-ai.com/api",
+    "siteUrl": "https://app.agnes-ai.com",
+    "timezone": "Asia/Shanghai",
+    "defaultPrompt": "Create a realistic native UGC-style vertical video ad (9:16) from the attached product image, suitable for Meta and TikTok ads. Natural handheld feel, on-brand captions, attention-grabbing hook.",
+    "agentType": "video"
+  },
+  "hashtags": "#newproduct #ugc #ads #fyp #foryou #metaads",
+  "mediaDir": "media",
+  "pollIntervalMs": 5000,
+  "maxPollAttempts": 120,
+  "github": {
+    "owner": "",
+    "repo": "",
+    "pat": ""
+  }
+}
