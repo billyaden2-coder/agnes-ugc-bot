@@ -72,20 +72,29 @@ export async function runUgc(token, imageFiles, userText, { onLog = () => {} } =
 
   onLog(`streaming to Agnes (conv ${conversationId})...`);
   let terminal = null;
+  let lastDetail = "";
   for await (const ev of chatStream(token, payload)) {
     const data = ev.data;
-    const evType = data && typeof data === "object" && data.type ? data.type : ev.type;
+    const evType = ev.type;
+    const detail = data && typeof data === "object" ? JSON.stringify(data).slice(0, 300) : String(data);
+    onLog(`  event ${evType}: ${detail}`);
     if (evType === "AgentProgress" || evType === "progress") {
       const desc = data?.description || data?.agent_vertical || "";
       if (desc) onLog(`  progress: ${desc}`);
     } else if (TERMINAL_TYPES.has(evType)) {
       terminal = evType;
-      onLog(`  terminal event: ${evType}`);
+      lastDetail = detail;
       break;
     }
   }
   if (terminal === "AgentError" || terminal === "error") {
-    throw new Error("Agnes reported an error during generation");
+    throw new Error(`Agnes reported an error during generation (${lastDetail})`);
+  }
+  if (terminal === "InsufficientCredits") {
+    throw new Error("Agnes: insufficient credits on your account");
+  }
+  if (terminal === "HumanReview") {
+    throw new Error("Agnes: job requires manual review (HumanReview)");
   }
 
   onLog("waiting for generation to finish...");
