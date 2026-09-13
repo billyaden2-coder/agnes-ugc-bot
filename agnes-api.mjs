@@ -183,32 +183,58 @@ export async function conversationHistory(token, conversationId) {
   return j?.data;
 }
 
+function toArray(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === "object") return Object.values(v);
+  return [];
+}
+
 export function findVideoResult(history) {
   if (!history) return null;
-  const messages = history.messages || history.items || (Array.isArray(history) ? history : []);
+  const messages = toArray(history.messages || history.items || history);
   for (const msg of messages) {
-    const artifacts = msg.artifacts || msg.artifact || (msg.results && msg.results.length ? [msg] : []);
-    for (const art of artifacts) {
+    if (!msg || typeof msg !== "object") continue;
+    const artifacts = toArray(msg.artifacts || msg.artifact);
+    const withResults = artifacts.length ? artifacts : toArray(msg.results);
+    for (const art of withResults) {
+      if (!art || typeof art !== "object") continue;
       const kind = art.kind || art.type;
-      if (kind === "video") {
-        const results = Array.isArray(art.results) ? art.results : [];
-        for (const r of results) {
-          const picks = [r.url, r.file_url, r.video_url, art.url, r.webp_url, r.first_frame_url, r.cover_url];
-          const url = picks.find((x) => typeof x === "string" && x.startsWith("http"));
-          if (url) {
-            const thumb = [r.cover_url, r.first_frame_url, r.webp_url, r.thumbnail_url].find(
-              (x) => typeof x === "string" && x.startsWith("http")
-            );
-            return {
-              url,
-              thumbUrl: thumb || null,
-              title: art.title || r.title || r.filename || art.filename || "ugc-video",
-              mime: r.mimetype || art.mimetype || "",
-            };
-          }
+      const results = toArray(art.results);
+      const candidates = results.length ? results : kind === "video" ? [art] : [];
+      for (const r of candidates) {
+        const src = typeof r === "string" ? r : r?.url || r?.file_url || r?.video_url || art?.url;
+        if (typeof src === "string" && src.startsWith("http")) {
+          return {
+            url: src,
+            thumbUrl: null,
+            title: art?.title || r?.title || r?.filename || art?.filename || "ugc-video",
+            mime: r?.mimetype || art?.mimetype || "",
+          };
         }
       }
     }
+  }
+  const box = { res: null };
+  (function scan(node) {
+    if (!node || typeof node !== "object" || box.res) return;
+    if (Array.isArray(node)) {
+      node.forEach(scan);
+      return;
+    }
+    if ((node.kind === "video" || node.type === "video") && typeof node.url === "string" && node.url.startsWith("http")) {
+      box.res = node;
+      return;
+    }
+    for (const v of Object.values(node)) scan(v);
+  })(history);
+  if (box.res) {
+    return {
+      url: box.res.url,
+      thumbUrl: null,
+      title: box.res.title || box.res.filename || "ugc-video",
+      mime: box.res.mimetype || "",
+    };
   }
   return null;
 }
