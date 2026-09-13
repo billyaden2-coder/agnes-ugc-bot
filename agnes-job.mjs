@@ -62,12 +62,21 @@ export async function runUgc(token, imageFiles, userText, { onLog = () => {} } =
   const query = userText
     ? `${config.agnes.defaultPrompt}\n\nAdditional instructions: ${userText}`
     : config.agnes.defaultPrompt;
+  const agentType = config.agnes.agentType || "video";
+  const extraContext = {};
+  if (agentType === "video") {
+    extraContext.agent_params = config.agnes.videoParams || {
+      mode: "fast",
+      ratio: "9:16",
+      duration: 5,
+    };
+  }
   const payload = {
     conversation_id: conversationId,
     query,
-    agent_type: config.agnes.agentType || "video",
+    agent_type: agentType,
     files,
-    extra_context: {},
+    extra_context: extraContext,
   };
 
   onLog(`streaming to Agnes (conv ${conversationId})...`);
