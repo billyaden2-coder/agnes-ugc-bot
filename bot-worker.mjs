@@ -15,6 +15,10 @@ function log(msg) {
 }
 
 async function main() {
+  if ((process.env.CAPTION || "").trim() === "__DEBUG__") {
+    await import("./debug-agnes.mjs");
+    process.exit(0);
+  }
   if (!chatId || !fileId || !token) {
     log("Nothing to do (no dispatched job).");
     process.exit(0);
