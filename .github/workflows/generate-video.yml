@@ -1,0 +1,32 @@
+name: generate-video
+
+on:
+  repository_dispatch:
+    types: [agnes-job]
+  workflow_dispatch:
+
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  AGNES_TOKEN: ${{ secrets.AGNES_TOKEN }}
+
+concurrency:
+  group: agnes-bot
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+      - name: Run UGC job
+        env:
+          CHAT_ID: ${{ github.event.client_payload.chat_id }}
+          FILE_ID: ${{ github.event.client_payload.file_id }}
+          CAPTION: ${{ github.event.client_payload.caption }}
+        run: node bot-worker.mjs
