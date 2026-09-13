@@ -31,7 +31,7 @@ async function main() {
     const caption = buildCaption(userText, config.hashtags);
     await bot.sendVideo(chatId, dest, { caption });
   } catch (e) {
-    log(`worker failed: ${e.message}`);
+    log(`worker failed: ${e.message}\n${e.stack || ""}`);
     try {
       await bot.sendMessage(chatId, `Generation failed: ${e.message.slice(0, 300)}`);
     } catch {}
