@@ -12,7 +12,12 @@
     "siteUrl": "https://app.agnes-ai.com",
     "timezone": "Asia/Shanghai",
     "defaultPrompt": "Create a realistic native UGC-style vertical video ad (9:16) from the attached product image, suitable for Meta and TikTok ads. Natural handheld feel, on-brand captions, attention-grabbing hook.",
-    "agentType": "video"
+    "agentType": "video",
+    "videoParams": {
+      "mode": "fast",
+      "ratio": "9:16",
+      "duration": 5
+    }
   },
   "hashtags": "#newproduct #ugc #ads #fyp #foryou #metaads",
   "mediaDir": "media",
