@@ -25,6 +25,15 @@ async function j(path, opts = {}) {
   }
 }
 
+async function newConv() {
+  const raw = await j("/v1/agnes/conversation", {
+    method: "POST",
+    body: JSON.stringify({ title: "dbg " + Date.now() }),
+  });
+  const obj = JSON.parse(raw.replace(/^\d+ /, ""));
+  return obj?.data?.id || obj?.data?.conversation_id || obj?.id;
+}
+
 async function stream(label, payload) {
   const res = await fetch(API + "/v1/agnes/chat/stream", {
     method: "POST",
@@ -43,7 +52,7 @@ async function stream(label, payload) {
     try {
       reader.cancel();
     } catch {}
-  }, 15000);
+  }, 12000);
   try {
     for (;;) {
       const { done, value } = await reader.read();
@@ -70,56 +79,38 @@ async function stream(label, payload) {
           }
         }
         events.push(`${type} ${typeof data === "string" ? data : JSON.stringify(data).slice(0, 240)}`);
-        if (type !== "message" && (type === "AgentError" || type === "error" || type === "AgentEnd")) break;
+        if (type === "AgentError" || type === "AgentEnd" || events.length > 20) {
+          try {
+            reader.cancel();
+          } catch {}
+        }
       }
-      if (events.length && events[events.length - 1].includes("AgentError") || events.some((e) => e.startsWith("error "))) break;
-      if (events.some((e) => e.startsWith("AgentEnd"))) break;
-      if (events.length > 25) break;
+      if (events.length && (events[events.length - 1].includes("AgentError") || events[events.length - 1].includes("AgentEnd"))) break;
     }
   } catch (e) {
     events.push(`READERR ${e.message}`);
   } finally {
     clearTimeout(timer);
   }
-  console.log(`[${label}] events(${events.length}):\n  ${events.slice(0, 10).join("\n  ")}`);
+  console.log(`[${label}] events(${events.length}):\n  ${events.slice(0, 8).join("\n  ")}`);
 }
 
 console.log("token length:", token ? token.length : "MISSING");
 console.log("profile:", await j("/v2/user/profile"));
-console.log("presigned:", await j("/v1/file/presigned-url", {
-  method: "POST",
-  body: JSON.stringify({ filename: "t.png", content_type: "image/png", purpose: "chat_attachment", file_uid: "dbg" + Date.now() }),
-}));
-const convRes = JSON.parse((await j("/v1/agnes/conversation", {
-  method: "POST",
-  body: JSON.stringify({ title: "debug matrix" }),
-})).replace(/^\d+ /, ""));
-console.log("conversation raw:", JSON.stringify(convRes).slice(0, 500));
-let convId = convRes?.data?.id || convRes?.data?.conversation_id || convRes?.id || convRes?.data?.[0]?.id;
-console.log("conversation id:", convId);
 
-await stream("A ours+empty ids", {
-  conversation_id: convId, query: "hi", agent_type: "video", files: [],
-  client_id: "", session_id: "", extra_context: {},
-});
-await stream("B no ids", {
-  conversation_id: convId, query: "hi", agent_type: "video", files: [],
-});
-await stream("C no ids, no files", {
-  conversation_id: convId, query: "hi", agent_type: "video",
-});
-await stream("D agent_type super", {
-  conversation_id: convId, query: "hi", agent_type: "super", files: [],
-});
-await stream("E no agent_type, mode 10", {
-  conversation_id: convId, query: "hi", mode: 10, files: [],
-});
-await stream("F video + agent_params fast 9:16 5s", {
-  conversation_id: convId, query: "hi", agent_type: "video", files: [],
-  extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } },
-});
-await stream("G video + agent_params with selected_skills", {
-  conversation_id: convId, query: "hi", agent_type: "video", files: [],
-  client_id: "", session_id: "",
-  extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } },
-});
+const variants = [
+  ["V1 video+params 9:16 fast", { agent_type: "video", extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } } }],
+  ["V2 video+params 16:9 quality", { agent_type: "video", extra_context: { agent_params: { mode: "quality", ratio: "16:9", duration: 30 } } }],
+  ["V3 video+params no files", { agent_type: "video", extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } } }],
+];
+
+for (const [label, fields] of variants) {
+  const convId = await newConv();
+  console.log("conv:", convId);
+  await stream(label, {
+    conversation_id: convId,
+    query: label.includes("files") ? "look at the image" : "hi",
+    files: label.includes("no files") ? undefined : [],
+    ...fields,
+  });
+}
