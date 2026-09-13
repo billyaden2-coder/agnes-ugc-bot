@@ -114,3 +114,12 @@ await stream("D agent_type super", {
 await stream("E no agent_type, mode 10", {
   conversation_id: convId, query: "hi", mode: 10, files: [],
 });
+await stream("F video + agent_params fast 9:16 5s", {
+  conversation_id: convId, query: "hi", agent_type: "video", files: [],
+  extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } },
+});
+await stream("G video + agent_params with selected_skills", {
+  conversation_id: convId, query: "hi", agent_type: "video", files: [],
+  client_id: "", session_id: "",
+  extra_context: { agent_params: { mode: "fast", ratio: "9:16", duration: 5 } },
+});
