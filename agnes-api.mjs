@@ -92,13 +92,18 @@ export async function uploadImage(token, filePath) {
   const buf = fs.readFileSync(filePath);
   const method = (data.method || "PUT").toUpperCase();
   const headers = { "Content-Type": contentType };
-  for (const h of data.required_headers || []) {
-    if (typeof h === "string" && h.includes(":")) {
-      const [k, ...rest] = h.split(":");
-      headers[k.trim()] = rest.join(":").trim();
-    } else if (typeof h === "object") {
-      for (const [k, v] of Object.entries(h)) headers[k] = v;
+  const req = data.required_headers;
+  if (Array.isArray(req)) {
+    for (const h of req) {
+      if (typeof h === "string" && h.includes(":")) {
+        const [k, ...rest] = h.split(":");
+        headers[k.trim()] = rest.join(":").trim();
+      } else if (h && typeof h === "object") {
+        for (const [k, v] of Object.entries(h)) headers[k] = v;
+      }
     }
+  } else if (req && typeof req === "object") {
+    for (const [k, v] of Object.entries(req)) headers[k] = String(v);
   }
   const up = await fetch(data.upload_url, { method, headers, body: buf });
   if (!up.ok) throw new Error(`upload to CDN failed: HTTP ${up.status}`);
